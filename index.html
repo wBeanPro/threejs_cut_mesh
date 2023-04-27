@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Three.js Convex Polygon Cut Example</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <script src="https://threejs.org/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/earcut/dist/earcut.min.js"></script>
+    <script>
+        // Set up scene and camera
+        var scene = new THREE.Scene();
+        var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 2;
+
+        // Create plane mesh
+        var planeGeometry = new THREE.PlaneBufferGeometry(1, 1, 20, 20);
+        var planeMaterial = new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load('texture.jpg') });
+        var plane = new THREE.Mesh(planeGeometry, planeMaterial);
+        scene.add(plane);
+        function cut() {
+            var geometry = plane.geometry.clone();
+            var positionAttribute = geometry.getAttribute('position');
+            var vertexCount = positionAttribute.count;
+            var indices = Array.from(geometry.index.array); // Convert indices typed array to regular array
+            var numSides = Math.floor(Math.random() * 8) + 3; // Random number of sides between 3 and 10
+            var polygonVertices = [];
+            for (var i = 0; i < numSides; i++) {
+                var randomIndex = Math.floor(Math.random() * vertexCount);
+                var x = positionAttribute.getX(randomIndex);
+                var y = positionAttribute.getY(randomIndex);
+                var z = positionAttribute.getZ(randomIndex);
+                polygonVertices.push(new THREE.Vector3(x, y, z));
+                positionAttribute.setXYZ(randomIndex, 0, 0, 0); // Set vertex position to (0, 0, 0)
+                // break;
+            }
+            var flattenedVertices = polygonVertices.map(function(vertex) {
+                return vertex.x + ',' + vertex.y + ',' + vertex.z;
+            });
+            var polygonIndices = earcut(flattenedVertices);
+            for (var i = 0; i < polygonIndices.length; i++) {
+                indices.push(polygonIndices[i] + vertexCount);
+            }
+            geometry.setIndex(indices);
+            positionAttribute.needsUpdate = true;
+            geometry.computeVertexNormals();
+
+            // Update plane mesh geometry
+            plane.geometry = geometry;
+        }
+        // Render loop function
+        function render() {
+            requestAnimationFrame(render);
+            // Randomly cut convex polygons from plane geometry
+           
+            
+            // Render scene
+            renderer.render(scene, camera);
+        }
+
+        // Set up renderer and start rendering
+        var renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+        render();
+        setInterval(cut, 500);
+    </script>
+</body>
+</html>
